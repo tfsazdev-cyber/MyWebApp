@@ -1,0 +1,17 @@
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\MyWebApp.exe
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\publish\web.config
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\web.config
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\appsettings.Development.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\appsettings.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\appsettings.Development.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\appsettings.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\MyWebApp.deps.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\MyWebApp.runtimeconfig.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\publish\appsettings.Development.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\publish\appsettings.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\publish\MyWebApp.deps.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\publish\publish\MyWebApp.runtimeconfig.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\MyWebApp.dll
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\MyWebApp.deps.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\MyWebApp.runtimeconfig.json
+C:\Users\administrator\Documents\MyWebApp\MyWebApp\publish\MyWebApp.pdb
