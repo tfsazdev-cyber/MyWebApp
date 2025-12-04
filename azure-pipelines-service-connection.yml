@@ -1,0 +1,92 @@
+# Azure DevOps CI/CD Pipeline - Service Connection Deployment Focus
+# This pipeline demonstrates deployment using Azure Service Connections
+
+trigger:
+  branches:
+    include:
+      - main
+      - master
+
+variables:
+  # Azure Container Registry Service Connection
+  dockerRegistryServiceConnection: 'YOUR_ACR_SERVICE_CONNECTION_NAME'
+  imageRepository: 'mywebapp'
+  containerRegistry: 'YOUR_ACR_NAME.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
+  
+  # Azure Service Connection for App Service
+  azureSubscription: 'YOUR_AZURE_SERVICE_CONNECTION_NAME'
+  appServiceName: 'YOUR_APP_SERVICE_NAME'
+  resourceGroup: 'YOUR_RESOURCE_GROUP_NAME'
+  
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: BuildAndPush
+    displayName: 'Build and Push Docker Image'
+    jobs:
+      - job: BuildJob
+        pool:
+          vmImage: $(vmImage)
+        
+        steps:
+          - checkout: self
+          
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageRepository)
+              command: 'build'
+              Dockerfile: $(dockerfilePath)
+              tags: |
+                $(tag)
+                latest
+          
+          - task: Docker@2
+            displayName: 'Push to Azure Container Registry'
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageRepository)
+              command: 'push'
+              tags: |
+                $(tag)
+                latest
+
+  - stage: Deploy
+    displayName: 'Deploy to Azure App Service'
+    dependsOn: BuildAndPush
+    condition: succeeded()
+    
+    jobs:
+      - deployment: DeployAppService
+        pool:
+          vmImage: $(vmImage)
+        environment: 'Production'
+        
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy Container to App Service'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    appName: $(appServiceName)
+                    containers: |
+                      $(containerRegistry)/$(imageRepository):$(tag)
+
+                - task: AzureCLI@2
+                  displayName: 'Verify Deployment'
+                  inputs:
+                    azureSubscription: $(azureSubscription)
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Checking App Service status..."
+                      az webapp show --name $(appServiceName) --resource-group $(resourceGroup) --query "state" -o tsv
+                      
+                      echo "Checking container configuration..."
+                      az webapp config container show --name $(appServiceName) --resource-group $(resourceGroup)
+

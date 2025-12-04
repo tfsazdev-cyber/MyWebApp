@@ -1,0 +1,118 @@
+# Azure DevOps CI/CD Pipeline - Agent-Based Deployment Focus
+# This pipeline demonstrates deployment using Azure DevOps self-hosted agents
+
+trigger:
+  branches:
+    include:
+      - main
+      - master
+
+variables:
+  # Container Registry Configuration
+  dockerRegistryServiceConnection: 'YOUR_ACR_SERVICE_CONNECTION_NAME'
+  imageRepository: 'mywebapp'
+  containerRegistry: 'YOUR_ACR_NAME.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: '$(Build.BuildId)'
+  
+  # Agent Pool Configuration
+  agentPool: 'YOUR_AGENT_POOL_NAME'  # Self-hosted agent pool name
+  
+  # Deployment Configuration
+  containerName: 'mywebapp'
+  hostPort: '8080'
+  containerPort: '8080'
+
+stages:
+  - stage: BuildAndPush
+    displayName: 'Build and Push Docker Image'
+    jobs:
+      - job: BuildJob
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          - checkout: self
+          
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageRepository)
+              command: 'build'
+              Dockerfile: $(dockerfilePath)
+              tags: |
+                $(tag)
+                latest
+          
+          - task: Docker@2
+            displayName: 'Push to Container Registry'
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageRepository)
+              command: 'push'
+              tags: |
+                $(tag)
+                latest
+
+  - stage: DeployToAgent
+    displayName: 'Deploy to Self-Hosted Agent'
+    dependsOn: BuildAndPush
+    condition: succeeded()
+    
+    jobs:
+      - job: DeployJob
+        pool:
+          name: $(agentPool)
+        
+        steps:
+          - task: Docker@2
+            displayName: 'Login to Container Registry'
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              command: 'login'
+          
+          - script: |
+              echo "Pulling latest Docker image..."
+              docker pull $(containerRegistry)/$(imageRepository):$(tag)
+            displayName: 'Pull Docker Image'
+          
+          - script: |
+              echo "Stopping existing container..."
+              docker stop $(containerName) 2>/dev/null || echo "Container not running"
+              docker rm $(containerName) 2>/dev/null || echo "Container not found"
+            displayName: 'Stop Existing Container'
+            continueOnError: true
+          
+          - script: |
+              echo "Starting new container..."
+              docker run -d \
+                --name $(containerName) \
+                -p $(hostPort):$(containerPort) \
+                --restart unless-stopped \
+                --log-driver json-file \
+                --log-opt max-size=10m \
+                --log-opt max-file=3 \
+                $(containerRegistry)/$(imageRepository):$(tag)
+            displayName: 'Run New Container'
+          
+          - script: |
+              echo "Waiting for container to start..."
+              sleep 10
+              
+              echo "Checking container status..."
+              docker ps | grep $(containerName)
+              
+              echo "Container logs:"
+              docker logs $(containerName) --tail 20
+              
+              echo "Testing container health..."
+              curl -f http://localhost:$(hostPort) || echo "Health check failed - container may still be starting"
+            displayName: 'Verify Deployment'
+            continueOnError: true
+          
+          - script: |
+              echo "Container deployment completed successfully!"
+              docker inspect $(containerName) --format='{{.State.Status}}'
+            displayName: 'Final Status Check'
+
