@@ -1,0 +1,12 @@
+trigger:
+- main
+- master
+
+pool:
+  name: Default
+
+steps:
+- checkout: self
+
+- script: echo "Simple build for $(Build.Repository.Name)"
+  displayName: 'Build placeholder'
